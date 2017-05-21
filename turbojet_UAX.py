@@ -16,6 +16,7 @@ T = 302  # K, Temp ese día
 Tsl = 288  # K, Temp estandar
 psl = 101325  # Pa, pres estandar
 rho0 = psl / (287 * Tsl)
+L = 46
 
 # Datos turbina
 radio_ext = 0.04
@@ -76,11 +77,33 @@ def vel_salida(T5t, T9):
 # Actuaciones
 def empuje_teorico(Gc, Cc, v8, v0):
     return (Gc + Cc) * v8 - Gc * v0
+def eneto(Gc, Cc, v8, v0):
+    return (Gc + Cc) * v8 - Gc * v0
 # Impulso específico
 def imp_esp(E, Gc):
     return E / Gc
 
+
+# Rendimiento motor, propulsor y motopropulsor:
+def rendimiento_TB(E, Cc, v9, v0, Gc):
+    # Rendimiento motor:
+    eta_m = (E * v0 + 0.5 * (Gc + Cc) * (v9 - v0) ** 2 - 0.5 * Cc * v0 ** 2) / (Cc * L)
+
+    # Rendimiento propulsor:
+    eta_p = E * v0 / (E * v0 + 0.5 * (Gc + Cc) * (v9 - v0) ** 2 - 0.5 * Cc * v0 ** 2)
+
+    # Rendimiento motopropulsor:
+    eta_mp = eta_m * eta_p
+
+    return eta_m, eta_p, eta_mp
+
 # Funcionamiento nominal (108000 RPM)
+
+# Gasto corregido aire
+Gc_108000 = c_corregido(datos.G_108000)
+
+# Gasto corregido combustible
+Cc_108000 = G_corregido(datos.c_108000)
 
 #Relación de compresion difusor
 pi20_108000 = rel_comp(datos.p2t_108000, datos.p0t_108000)
@@ -98,20 +121,17 @@ pi54_108000 = rel_comp(datos.p5t_108000, datos.p4t_108000)
 rend_comp_108000 = rendimiento_compresor(pi32_108000, datos.T2t_108000, datos.T3t_108000)
 
 # Velocidad entrada
-v0_108000 = vel_entrada(datos.T5t_108000)
+v0_108000 = vel_entrada(Gc_108000)
 
 # Temperatura estatica salida
 T9_108000 = tobera(datos.T2t_108000, datos.T5t_108000, datos.p5t_108000)
 
 # Velocidad salida
 v9_108000 = vel_salida(datos.T5t_108000, T9_108000)
-print('--------->', v9_108000)
+print('v9 --------->', v9_108000)
 
-# Gasto corregido aire
-Gc_108000 = c_corregido(datos.G_108000)
-
-# Gasto corregido combustible
-Cc_108000 = G_corregido(datos.c_108000)
+# Empuje neto
+Eneto_108000 = eneto(Gc_108000, Cc_108000, v9_108000, v0_108000)
 
 # Rendimiento turbina
 rend_turb_108000 = rendimiento_turbina(pi54_108000, datos.T4t_108000, datos.T5t_108000)
@@ -119,7 +139,6 @@ rend_turb_108000 = rendimiento_turbina(pi54_108000, datos.T4t_108000, datos.T5t_
 E_teorico_108000 = empuje_teorico(Gc_108000, Cc_108000, v9_108000, v0_108000)
 # Impulso específico
 Ie_108000 = imp_esp(datos.E_108000, Gc_108000)
-
 
 print("Gasto corregido a 108000 RPM:", Gc_108000)
 print('Relación de compresión del difusor:', pi20_108000)
@@ -130,6 +149,7 @@ print('Relación de compresión cámara de combustión:', pi43_108000)
 print('Consumo de combustible a 108000 RPM:', datos.c_108000)
 print('Rendimiento adiabático de la turbina', rend_turb_108000)
 print('Empuje teórico a 108000 RPM', E_teorico_108000)
+print('Empuje neto a 108000 RPM', Eneto_108000)
 print("Empuje a 36000 RPM:", datos.E_36000)
 print("Empuje a 108000 RPM:", datos.E_108000)
 print("Impulso específico a 108000 RPM:", Ie_108000)
